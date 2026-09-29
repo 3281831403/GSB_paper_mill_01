@@ -20,11 +20,16 @@ def save_state(state):
 
 def load_state(text):
     state = json.loads(text)
-    state["batch_id"] += 1
     return state
 
 
 def feed(state, batch_id, amount):
+    if batch_id in state["batches"]:
+        return False
+    if state["machine_load"] >= state["machine_capacity"]:
+        return False
+    if amount > state["pulp"]:
+        return False
     state["batches"][batch_id] = amount
     state["machine_load"] += amount
     state["pulp"] -= amount
@@ -32,26 +37,33 @@ def feed(state, batch_id, amount):
 
 
 def check_moisture(state, moisture):
-    if moisture < 30:
+    if moisture >= 40:
         return "wet"
     return "ok"
 
 
 def cancel(state, batch_id):
+    if batch_id not in state["batches"]:
+        return False
+    amount = state["batches"].pop(batch_id)
+    state["machine_load"] -= amount
     return True
 
 
 def produce(state, amount):
+    if state.get("whitewater_fault"):
+        return False
     return True
 
 
 def break_event(state):
     state["loss"] += 10
-    state["loss"] += 10
     return state["loss"]
 
 
 def start(state):
+    if state["pulp"] <= 0:
+        return False
     return True
 
 
